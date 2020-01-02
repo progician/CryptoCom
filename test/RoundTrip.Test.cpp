@@ -75,14 +75,7 @@ auto main(int, char const*[]) -> int {
   auto const actual = extract_intersection(evaluated, local);
   auto const expected = std::vector<int>{11, 13};
   
-  if (actual.size() != expected.size()) {
-    std::cerr << "failed: sets are not equal!" << std::endl;
-    std::cerr << "expected: " << expected << std::endl;
-    std::cerr << "actual: " << actual << std::endl;
-    return 1;
-  }
-
-  if (!std::equal(actual.begin(), actual.end(), expected.begin())) {
+  if (actual.size() != expected.size() || !std::equal(actual.begin(), actual.end(), expected.begin())) {
     std::cerr << "failed: sets are not equal!" << std::endl;
     std::cerr << "expected: " << expected << std::endl;
     std::cerr << "actual: " << actual << std::endl;
