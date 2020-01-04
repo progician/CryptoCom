@@ -30,17 +30,13 @@ Once configured, one can cut to the chase: build and install it.
 $ cmake --build build && cmake --build build --target install
 ```
 
-
-But the whole point of this project is to demonstrate Continuous Integration and Delivery practices and I expect developers would be interested how to do testing. The following is advised:
+The simple build and install steps are meant for release/deployment purposes. However, during development one must regurarly check the project to guard against regressions and to evaluate the health of the code. For this the project offers named checks, like the following:
 
 ```
-$ cmake --build build --target check-unit
-$ cmake --build build --target check-functional
-$ cmake --build build --target check-perf
-$ cmake --build build --target install
+$ cmake --build build --target check-integration
 ```
 
-This are the same stages the Jenkinsfile declares for the CI pipeline.
+These are steps in the continuous integration set up for pushes and pull requests.
 
 
 ## Authors
