@@ -1,4 +1,4 @@
-# CryptoCom
+# CryptoCom ![](https://github.com/progician/CryptoCom/workflows/Continuous%20Integration/badge.svg)
 
 Library and application of Private Set Intersection algorithms. These primitives can be used for distributed computing.
 
