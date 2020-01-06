@@ -6,6 +6,14 @@ project(CryptoCom
 
 
 #===------------------------------------------------------------------------===
+# CryptoCom library
+add_library(CryptoCom INTERFACE)
+add_library(CryptoCom::CryptoCom ALIAS CryptoCom)
+target_include_directories(CryptoCom INTERFACE include)
+target_compile_features(CryptoCom INTERFACE cxx_std_17)
+
+
+#===------------------------------------------------------------------------===
 # Unit testing
 find_package(Catch2 CONFIG REQUIRED)
 add_executable(CryptoCom.UT EXCLUDE_FROM_ALL)
@@ -14,7 +22,7 @@ target_sources(CryptoCom.UT
         src/ElGamal.Test.cpp
         src/Main.Test.cpp
 )
-target_link_libraries(CryptoCom.UT PRIVATE Catch2::Catch2)
+target_link_libraries(CryptoCom.UT PRIVATE Catch2::Catch2 CryptoCom::CryptoCom)
 
 add_custom_target(check-unit
     COMMAND $<TARGET_FILE:CryptoCom.UT>
