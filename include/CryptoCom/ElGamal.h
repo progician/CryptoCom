@@ -49,6 +49,15 @@ namespace CryptoCom::ElGamal {
       auto const public_key = _Private::ModuloPow(generator, private_key, order);
       return {private_key, public_key};
     }
+
+    static auto Encrypt(int message, int key, int order, int generator, std::function<int()>& rng) -> std::pair<int, int> {
+      using namespace _Private;
+      auto const random_secret = rng();
+      return {
+          ModuloPow(generator, random_secret, order),
+          ModuloMul(ModuloPow(key, random_secret, order), message, order)
+      };
+    }
   };
 
 } // CryptoCom::ElGamal
