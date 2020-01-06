@@ -23,7 +23,7 @@ jobs:
         run: cmake -Bbuild -GNinja -DCMAKE_PROJECT_INCLUDE=build/conan_paths.cmake .
 
       - name: Unit tests
-        run: cmake --build build -t check-unit -v
+        run: cmake --build build -t check-unit
 
       - name: Integration Tests
-        run: cmake --build build -t check-integration -v
+        run: cmake --build build -t check-integration
