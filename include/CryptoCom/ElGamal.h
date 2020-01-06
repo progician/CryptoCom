@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <functional>
+#include <utility>
 
 namespace CryptoCom::ElGamal {
   namespace _Private {
