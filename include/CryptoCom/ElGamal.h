@@ -72,7 +72,7 @@ namespace CryptoCom::ElGamal {
       return result;
     }
   }
-  
+
 
   struct ElGamal {
     static auto GenerateKeys(int order, int generator, std::function<int()>& rng) -> std::pair<int, int> {
@@ -82,7 +82,11 @@ namespace CryptoCom::ElGamal {
     }
 
 
-    static auto Encrypt(int message, int key, int order, int generator, std::function<int()>& rng) -> std::pair<int, int> {
+    struct Cipher {
+      int c1, c2;
+    };
+
+    static auto Encrypt(int message, int key, int order, int generator, std::function<int()>& rng) -> Cipher {
       using namespace _Private;
       auto const random_secret = rng();
       return {
@@ -92,10 +96,10 @@ namespace CryptoCom::ElGamal {
     }
 
 
-    static auto Decrypt(std::pair<int, int> const cipher, int key, int order, int generator) -> int {
+    static auto Decrypt(Cipher const cipher, int key, int order, int generator) -> int {
       using namespace _Private;
-      auto inverse = ModuloPow(cipher.first, -1 * key, order);
-      return ModuloMul(cipher.second, inverse, order);
+      auto inverse = ModuloPow(cipher.c1, -1 * key, order);
+      return ModuloMul(cipher.c2, inverse, order);
     }
   };
 
