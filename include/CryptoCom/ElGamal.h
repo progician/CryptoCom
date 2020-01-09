@@ -2,10 +2,37 @@
 
 #include <cmath>
 #include <functional>
+#include <tuple>
 #include <utility>
 
 namespace CryptoCom::ElGamal {
   namespace _Private {
+    auto ExtendedGCD(int lhs, int rhs) -> std::tuple<int, int, int> {
+      if (lhs == 0) {
+        return {rhs, 0, 1};
+      }
+
+      auto [gcd, x, y] = ExtendedGCD(rhs % lhs, lhs);
+      return {
+        gcd,
+        y - (rhs / lhs) * x,
+        x
+      };
+    }
+
+
+    auto ModuloInverse(int n, int m) -> int {
+      auto gcd = 0;
+      auto x = 0;
+      std::tie(gcd, x, std::ignore) = ExtendedGCD(n, m);
+
+      if (gcd != 1)
+        throw std::invalid_argument{"can't produce inverse, arguments are relative primes"};
+
+      return (x % m + m) % m;
+    }
+
+
     auto ModuloMul(int lhs, int rhs, int m) -> int {
       auto result = 0;
 
@@ -29,6 +56,10 @@ namespace CryptoCom::ElGamal {
 
     auto ModuloPow(int base, int exponent, int m) -> int {
       auto result = 1;
+      if (exponent < 0) {
+        auto const p = ModuloPow(base, std::abs(exponent), m);
+        return ModuloInverse(p, m);
+      }
 
       for (; exponent > 0; exponent >>= 1) {
         if (exponent & 1) {
@@ -50,6 +81,7 @@ namespace CryptoCom::ElGamal {
       return {private_key, public_key};
     }
 
+
     static auto Encrypt(int message, int key, int order, int generator, std::function<int()>& rng) -> std::pair<int, int> {
       using namespace _Private;
       auto const random_secret = rng();
@@ -57,6 +89,13 @@ namespace CryptoCom::ElGamal {
           ModuloPow(generator, random_secret, order),
           ModuloMul(ModuloPow(key, random_secret, order), message, order)
       };
+    }
+
+
+    static auto Decrypt(std::pair<int, int> const cipher, int key, int order, int generator) -> int {
+      using namespace _Private;
+      auto inverse = ModuloPow(cipher.first, -1 * key, order);
+      return ModuloMul(cipher.second, inverse, order);
     }
   };
 
