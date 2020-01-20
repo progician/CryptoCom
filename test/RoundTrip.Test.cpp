@@ -5,11 +5,14 @@
 #include <vector>
 
 
-template<typename Integral> using Polynomial = std::vector<Integral>;
+#include "CryptoCom/ElGamal.h"
 
-template<typename Integral>
-  auto operator*(Polynomial<Integral> const& lhs, Polynomial<Integral> const& rhs) -> Polynomial<Integral> {
-    Polynomial<Integral> result;
+
+template<typename FieldT> using Polynomial = std::vector<FieldT>;
+
+template<typename FieldT>
+  auto operator*(Polynomial<FieldT> const& lhs, Polynomial<FieldT> const& rhs) -> Polynomial<FieldT> {
+    Polynomial<FieldT> result;
     result.resize(lhs.size() + rhs.size() - 1, 0);
     for (int i = 0; i < lhs.size(); ++i) {
       for (int j = 0; j < rhs.size(); ++j) {

@@ -74,33 +74,43 @@ namespace CryptoCom::ElGamal {
   }
 
 
-  struct ElGamal {
-    static auto GenerateKeys(int order, int generator, std::function<int()>& rng) -> std::pair<int, int> {
-      auto const private_key = rng();
-      auto const public_key = _Private::ModuloPow(generator, private_key, order);
-      return {private_key, public_key};
-    }
+  auto GenerateKeys(int order, int generator, std::function<int()>& rng) -> std::pair<int, int> {
+    auto const private_key = rng();
+    auto const public_key = _Private::ModuloPow(generator, private_key, order);
+    return {private_key, public_key};
+  }
 
 
-    struct Cipher {
-      int c1, c2;
-    };
-
-    static auto Encrypt(int message, int key, int order, int generator, std::function<int()>& rng) -> Cipher {
-      using namespace _Private;
-      auto const random_secret = rng();
-      return {
-          ModuloPow(generator, random_secret, order),
-          ModuloMul(ModuloPow(key, random_secret, order), message, order)
-      };
-    }
-
-
-    static auto Decrypt(Cipher const cipher, int key, int order, int generator) -> int {
-      using namespace _Private;
-      auto inverse = ModuloPow(cipher.c1, -1 * key, order);
-      return ModuloMul(cipher.c2, inverse, order);
-    }
+  struct Cipher {
+    int c1, c2;
+    int order, generator;
   };
 
+
+  auto Encrypt(int message, int key, int order, int generator, std::function<int()>& rng) -> Cipher {
+    using namespace _Private;
+    auto const random_secret = rng();
+    return {
+        ModuloPow(generator, random_secret, order),
+        ModuloMul(ModuloPow(key, random_secret, order), message, order),
+        order, generator
+    };
+  }
+
+
+  auto Decrypt(Cipher const cipher, int key, int order, int generator) -> int {
+    using namespace _Private;
+    auto inverse = ModuloPow(cipher.c1, -1 * key, order);
+    return ModuloMul(cipher.c2, inverse, order);
+  }
+
+
+  auto operator*(Cipher const& lhs, Cipher const& rhs) -> Cipher {
+    using namespace _Private;
+    return {
+        ModuloMul(lhs.c1, rhs.c1, lhs.order),
+        ModuloMul(lhs.c2, rhs.c2, lhs.order),
+        lhs.order, lhs.generator
+    };
+  }
 } // CryptoCom::ElGamal
