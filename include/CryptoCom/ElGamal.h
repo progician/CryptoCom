@@ -14,9 +14,9 @@ namespace CryptoCom {
 
       auto [gcd, x, y] = ExtendedGCD(rhs % lhs, lhs);
       return {
-        gcd,
-        y - (rhs / lhs) * x,
-        x
+          gcd,
+          y - (rhs / lhs) * x,
+          x
       };
     }
 
@@ -26,8 +26,9 @@ namespace CryptoCom {
       auto x = 0;
       std::tie(gcd, x, std::ignore) = ExtendedGCD(n, m);
 
-      if (gcd != 1)
+      if (gcd != 1) { 
         throw std::invalid_argument{"can't produce inverse, arguments are relative primes"};
+      }
 
       return (x % m + m) % m;
     }
@@ -118,4 +119,56 @@ namespace CryptoCom {
 
   };
 
+  template<typename Field> struct ExpElGamal {
+    using PlainElGamal = ElGamal<Field>;
+
+    static auto GenerateKeys(std::function<int()>& rng) -> std::pair<int, int> {
+      return PlainElGamal::GenerateKeys(rng);
+    }
+
+
+    struct Cipher {
+      int c1, c2;
+
+      auto operator==(Cipher const& rhs) const -> bool {
+        return c1 == rhs.c1 && c2 == rhs.c2;
+      }
+
+      auto operator+(Cipher const& rhs) const -> Cipher {
+        using namespace _Private;
+        return {
+            ModuloMul(c1, rhs.c1, Field::order),
+            ModuloMul(c2, rhs.c2, Field::order),
+        };
+      }
+
+      auto operator*(int rhs) const -> Cipher {
+        using namespace _Private;
+        return {
+            c1,
+            ModuloMul(
+                c2,
+                ModuloPow(Field::generator, rhs, Field::order)
+            )
+        };
+      }
+    };
+
+
+    static auto Encrypt(int message, int key, std::function<int()>& rng) -> Cipher {
+      using namespace _Private;
+      auto const random_secret = rng();
+      return {
+          ModuloPow(Field::generator, random_secret, Field::order),
+          ModuloMul(ModuloPow(key, random_secret, Field::order), message, Field::order),
+      };
+    }
+
+
+    static auto Decrypt(Cipher const cipher, int key) -> int {
+      using namespace _Private;
+      auto inverse = ModuloPow(cipher.c1, -1 * key, Field::order);
+      return ModuloMul(cipher.c2, inverse, Field::order);
+    }
+  };
 } // CryptoCom::ElGamal

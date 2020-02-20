@@ -26,7 +26,7 @@ struct F {
   static int const order = 8009;
   static int const generator = 1131;
 };
-using AgreedElGamal = ElGamal<F>;
+using SimpleCrypto = ElGamal<F>;
 
 
 TEST_CASE("Basic check for ElGamal crypto system") {
@@ -34,18 +34,18 @@ TEST_CASE("Basic check for ElGamal crypto system") {
   auto rng_for_key = std::function<int()>{[SecretNumber](){ return SecretNumber; }};
 
 
-  auto const keys = AgreedElGamal::GenerateKeys(rng_for_key);
+  auto const keys = SimpleCrypto::GenerateKeys(rng_for_key);
   REQUIRE(keys == std::make_pair(SecretNumber, 7697));
 
   SECTION("encoding") {
     constexpr auto const Message = 102;
     auto rng_for_encryption = std::function<int()>{[SecretNumber](){ return 90; }};
-    auto cipher = AgreedElGamal::Encrypt(Message, keys.second, rng_for_encryption);
-    auto expected = AgreedElGamal::Cipher{6603, 5571};
+    auto cipher = SimpleCrypto::Encrypt(Message, keys.second, rng_for_encryption);
+    auto expected = SimpleCrypto::Cipher{6603, 5571};
     REQUIRE(cipher == expected);
 
     SECTION("decoding") {
-      auto decrypted = AgreedElGamal::Decrypt(cipher, keys.first);
+      auto decrypted = SimpleCrypto::Decrypt(cipher, keys.first);
       REQUIRE(decrypted == Message);
     }
   }
@@ -62,12 +62,36 @@ TEST_CASE("ElGamal is multiplicatively homomorphic") {
 
   constexpr auto const Order = 8009;
   constexpr auto const Generator = 1033;
-  auto const keys = AgreedElGamal::GenerateKeys(rng);
+  auto const keys = SimpleCrypto::GenerateKeys(rng);
 
-  auto const five_e = AgreedElGamal::Encrypt(5, keys.second, rng);
-  auto const four_e = AgreedElGamal::Encrypt(4, keys.second, rng);
+  auto const five_e = SimpleCrypto::Encrypt(5, keys.second, rng);
+  auto const four_e = SimpleCrypto::Encrypt(4, keys.second, rng);
 
   auto const multiplied_e = five_e * four_e;
-  auto const result = AgreedElGamal::Decrypt(multiplied_e, keys.first);
+  auto const result = SimpleCrypto::Decrypt(multiplied_e, keys.first);
+  REQUIRE(result == 20);
+}
+
+
+
+using SimpleAdditiveCrypto = ExpElGamal<F>;
+
+TEST_CASE("ExpElGamal is additively homomorphic") {
+  auto rng = std::function<int()>{[]() {
+    static auto numbers = std::queue<int>({79, 90, 23});
+    auto r = numbers.front();
+    numbers.pop();
+    return r;
+  }};
+
+  constexpr auto const Order = 8009;
+  constexpr auto const Generator = 1033;
+  auto const keys = SimpleAdditiveCrypto::GenerateKeys(rng);
+
+  auto const five_e = SimpleAdditiveCrypto::Encrypt(5, keys.second, rng);
+  auto const four_e = SimpleAdditiveCrypto::Encrypt(4, keys.second, rng);
+
+  auto const multiplied_e = five_e + four_e;
+  auto const result = SimpleAdditiveCrypto::Decrypt(multiplied_e, keys.first);
   REQUIRE(result == 20);
 }
