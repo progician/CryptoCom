@@ -68,13 +68,27 @@ TEST_CASE("Basic check for ElGamal crypto system") {
 }
 
 
-TEST_CASE("ElGamal is multiplicatively homomorphic") {
-  auto rng = std::function<int()>{[]() {
-    static auto numbers = std::queue<int>({79, 90, 23});
-    auto r = numbers.front();
-    numbers.pop();
+struct Seq {
+  std::queue<int> nums;
+
+  template<typename... Args> Seq(Args... args) : nums({args...}) {}
+
+  auto operator()() -> int {
+    auto r = nums.front();
+    nums.pop();
     return r;
-  }};
+  }
+};
+
+
+template<typename... Args>  
+auto Sequence(Args... args) -> std::function<int()> {
+  return std::function<int()>{Seq{args...}};
+}
+
+
+TEST_CASE("ElGamal is multiplicatively homomorphic") {
+  auto rng = Sequence(79, 90, 23);
 
   auto const keys = NormalElGamal::GenerateKeys(rng);
 
@@ -91,18 +105,32 @@ TEST_CASE("ElGamal is multiplicatively homomorphic") {
 using ExpCrypto = ExpElGamal<F>;
 
 TEST_CASE("ExpElGamal is additively homomorphic") {
-  auto rng = std::function<int()>{[]() {
-    static auto numbers = std::queue<int>({79, 90, 23});
-    auto r = numbers.front();
-    numbers.pop();
-    return r;
-  }};
+  auto rng = Sequence(79, 90, 23);
 
   auto const keys = ExpCrypto::GenerateKeys(rng);
   auto const five_e = ExpCrypto::Encrypt(5, keys.second, rng);
-  auto const four_e = ExpCrypto::Encrypt(4, keys.second, rng);
 
-  auto const multiplied_e = five_e + four_e;
-  auto const result = ExpCrypto::Decrypt(multiplied_e, keys.first);
-  REQUIRE(result == ExpCrypto::Apply(5 + 4));
+  SECTION("if using another cipher") {
+    auto const four_e = ExpCrypto::Encrypt(4, keys.second, rng);
+    auto const sum_e = five_e + four_e;
+    auto const result = ExpCrypto::Decrypt(sum_e, keys.first);
+    REQUIRE(result == ExpCrypto::Apply(5 + 4));
+  }
+
+  SECTION("if using a scalar") {
+    auto const sum_e = five_e + 4;
+    auto const result = ExpCrypto::Decrypt(sum_e, keys.first);
+    REQUIRE(result == ExpCrypto::Apply(5 + 4));
+  }
+}
+
+TEST_CASE("ExpElGamal also defines scalar multiplication") {
+  auto rng = Sequence(79, 90, 23);
+
+  auto const keys = ExpCrypto::GenerateKeys(rng);
+  auto const five_e = ExpCrypto::Encrypt(5, keys.second, rng);
+
+  auto const product_e = (five_e * 2) - 10;
+  auto const result = ExpCrypto::Decrypt(product_e, keys.first);
+  REQUIRE(result == ExpCrypto::Apply(5 * 2 - 10));
 }

@@ -72,6 +72,16 @@ auto Decrypt(Crypto::Cipher c) -> int {
 };
 
 
+template<> struct fmt::formatter<Crypto::Cipher> {
+  constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
+
+  template <typename FormatContext>
+  auto format(Crypto::Cipher const& c, FormatContext& ctx) {
+    return format_to(ctx.out(), "({}, {})", c.c1, c.c2);
+  }
+};
+
+
 auto prepare(std::vector<int> const& numbers) -> Polynomial<Field> {
   // Turn the numbers into coefficients of a polynomial with the roots of the set
   using namespace std;
@@ -131,6 +141,10 @@ auto extract_intersection(std::vector<Field> const& evaluated_set, std::vector<i
       }
   );
 
+  fmt::print("\toriginal: {}\n", fmt::join(original_pow, ", "));
+  fmt::print("\tdecrypted: {}\n", fmt::join(decrypted, ", "));
+
+
   auto intersection = vector<int>{};
   for (auto i = 0u; i < decrypted.size(); ++i) {
     auto const elem_in_local = find(begin(original_pow), end(original_pow), decrypted[i]);
@@ -142,21 +156,15 @@ auto extract_intersection(std::vector<Field> const& evaluated_set, std::vector<i
 }
 
 
-auto operator<<(std::ostream& ostr, std::vector<int> const& numbers) -> std::ostream& {
-  std::copy(
-    numbers.begin(), numbers.end(),
-    std::ostream_iterator<int>(ostr, ", ")
-  );
-  return ostr;
-}
-
-
 auto main(int, char const*[]) -> int {
   auto const local = std::vector<int>{11, 13};
   auto const encoded = prepare(local);
+  fmt::print("\tencoded: {}\n", fmt::join(encoded, ", "));
+
 
   auto const remote = std::vector<int>{10, 11};
   auto const evaluated = evaluate(encoded, remote);
+  fmt::print("\tevaluated: {}\n", fmt::join(evaluated, ", "));
 
   auto const actual = extract_intersection(evaluated, local);
   auto const expected = std::vector<int>{11};

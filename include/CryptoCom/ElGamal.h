@@ -168,6 +168,11 @@ namespace CryptoCom {
         };
       }
 
+      auto operator-(int rhs) const -> Cipher {
+        return *this + -rhs;
+      }
+
+
       auto operator*(int rhs) const -> Cipher {
         using namespace _Private;
         auto const plain = Normalise(rhs, Group::order);
