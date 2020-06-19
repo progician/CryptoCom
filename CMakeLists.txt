@@ -57,7 +57,7 @@ add_custom_target(check-unit
 add_executable(RoundTrip.Test EXCLUDE_FROM_ALL)
 target_sources(RoundTrip.Test PRIVATE test/RoundTrip.Test.cpp)
 target_compile_features(RoundTrip.Test PRIVATE cxx_std_17)
-target_link_libraries(RoundTrip.Test PRIVATE CryptoCom::CryptoCom)
+target_link_libraries(RoundTrip.Test PRIVATE CryptoCom::CryptoCom fmt::fmt)
 
 add_custom_target(check-integration
     COMMAND $<TARGET_FILE:RoundTrip.Test>

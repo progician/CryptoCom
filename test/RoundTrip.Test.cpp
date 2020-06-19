@@ -6,6 +6,9 @@
 #include <vector>
 
 
+#include "fmt/format.h"
+
+
 #include "CryptoCom/ElGamal.h"
 
 
@@ -149,22 +152,22 @@ auto operator<<(std::ostream& ostr, std::vector<int> const& numbers) -> std::ost
 
 
 auto main(int, char const*[]) -> int {
-  auto const local = std::vector<int>{3, 5, 7, 11, 13, 17, 19};
+  auto const local = std::vector<int>{11, 13};
   auto const encoded = prepare(local);
 
-  auto const remote = std::vector<int>{9, 10, 11, 12, 13};
+  auto const remote = std::vector<int>{10, 11};
   auto const evaluated = evaluate(encoded, remote);
 
   auto const actual = extract_intersection(evaluated, local);
-  auto const expected = std::vector<int>{11, 13};
+  auto const expected = std::vector<int>{11};
   
   if (actual.size() != expected.size() || !std::equal(actual.begin(), actual.end(), expected.begin())) {
-    std::cerr << "failed: sets are not equal!" << std::endl;
-    std::cerr << "expected: " << expected << std::endl;
-    std::cerr << "actual: " << actual << std::endl;
+    fmt::print(stderr, "failed: sets are not equal!\n");
+    fmt::print(stderr, "\texpected: {}\n", fmt::join(expected, ", "));
+    fmt::print(stderr, "\tactual:   {}\n", fmt::join(actual, ", "));
     return 1;
   }
 
-  std::cout << "passed" << std::endl;
+  fmt::print("passed\n");
   return 0;
 }

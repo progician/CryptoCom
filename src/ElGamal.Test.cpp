@@ -28,19 +28,19 @@ struct F {
   static int const order = 8009;
   static int const generator = 1151;
 };
-using SimpleCrypto = ElGamal<F>;
+using NormalElGamal = ElGamal<F>;
 
 
 namespace Catch {
   template<> struct StringMaker<std::pair<int, int>> {
     static std::string convert(std::pair<int, int> const& p) {
-      return fmt::format("({0}, {1})", p.first, p.second);
+      return fmt::format("({}, {})", p.first, p.second);
     }
   };
 
-  template<> struct StringMaker<SimpleCrypto::Cipher> {
-    static std::string convert(SimpleCrypto::Cipher const& c) {
-      return fmt::format("({0}, {1})", c.c1, c.c2);
+  template<> struct StringMaker<NormalElGamal::Cipher> {
+    static std::string convert(NormalElGamal::Cipher const& c) {
+      return fmt::format("({}, {})", c.c1, c.c2);
     }
   };
 }
@@ -51,17 +51,17 @@ TEST_CASE("Basic check for ElGamal crypto system") {
   auto rng_for_key = std::function<int()>{[SecretNumber](){ return SecretNumber; }};
 
 
-  auto const keys = SimpleCrypto::GenerateKeys(rng_for_key);
+  auto const keys = NormalElGamal::GenerateKeys(rng_for_key);
   REQUIRE(keys == std::make_pair(SecretNumber, 4097));
 
   SECTION("encoding") {
     constexpr auto const Message = 102;
     auto rng_for_encryption = std::function<int()>{[SecretNumber](){ return 90; }};
-    auto cipher = SimpleCrypto::Encrypt(Message, keys.second, rng_for_encryption);
-    REQUIRE(cipher == SimpleCrypto::Cipher{1132, 7773});
+    auto cipher = NormalElGamal::Encrypt(Message, keys.second, rng_for_encryption);
+    REQUIRE(cipher == NormalElGamal::Cipher{1132, 7773});
 
     SECTION("decoding") {
-      auto decrypted = SimpleCrypto::Decrypt(cipher, keys.first);
+      auto decrypted = NormalElGamal::Decrypt(cipher, keys.first);
       REQUIRE(decrypted == Message);
     }
   }
@@ -76,21 +76,19 @@ TEST_CASE("ElGamal is multiplicatively homomorphic") {
     return r;
   }};
 
-  constexpr auto const Order = 8009;
-  constexpr auto const Generator = 1033;
-  auto const keys = SimpleCrypto::GenerateKeys(rng);
+  auto const keys = NormalElGamal::GenerateKeys(rng);
 
-  auto const five_e = SimpleCrypto::Encrypt(5, keys.second, rng);
-  auto const four_e = SimpleCrypto::Encrypt(4, keys.second, rng);
+  auto const five_e = NormalElGamal::Encrypt(5, keys.second, rng);
+  auto const four_e = NormalElGamal::Encrypt(4, keys.second, rng);
 
   auto const multiplied_e = five_e * four_e;
-  auto const result = SimpleCrypto::Decrypt(multiplied_e, keys.first);
+  auto const result = NormalElGamal::Decrypt(multiplied_e, keys.first);
   REQUIRE(result == 20);
 }
 
 
 
-using SimpleAdditiveCrypto = ExpElGamal<F>;
+using ExpCrypto = ExpElGamal<F>;
 
 TEST_CASE("ExpElGamal is additively homomorphic") {
   auto rng = std::function<int()>{[]() {
@@ -100,14 +98,11 @@ TEST_CASE("ExpElGamal is additively homomorphic") {
     return r;
   }};
 
-  constexpr auto const Order = 8009;
-  constexpr auto const Generator = 1033;
-  auto const keys = SimpleAdditiveCrypto::GenerateKeys(rng);
-
-  auto const five_e = SimpleAdditiveCrypto::Encrypt(5, keys.second, rng);
-  auto const four_e = SimpleAdditiveCrypto::Encrypt(4, keys.second, rng);
+  auto const keys = ExpCrypto::GenerateKeys(rng);
+  auto const five_e = ExpCrypto::Encrypt(5, keys.second, rng);
+  auto const four_e = ExpCrypto::Encrypt(4, keys.second, rng);
 
   auto const multiplied_e = five_e + four_e;
-  auto const result = SimpleAdditiveCrypto::Decrypt(multiplied_e, keys.first);
-  REQUIRE(result == 20);
+  auto const result = ExpCrypto::Decrypt(multiplied_e, keys.first);
+  REQUIRE(result == 5 * 4);
 }
