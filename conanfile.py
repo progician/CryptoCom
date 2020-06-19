@@ -5,4 +5,5 @@ class CryptoCom(ConanFile):
     description = "Library and application for Private Set Intersection"
     author = "Gyula Gubacsi <gyula.gubacsi@gmail.com>"
     
-    requires = "Catch2/[~2.11.1]@catchorg/stable"
+    requires = "catch2/[~2.12.2]", "fmt/[~6.2.1]"
+    generators = "cmake_find_package"

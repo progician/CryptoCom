@@ -2,6 +2,7 @@
 #include <cmath>
 #include <iostream>
 #include <iterator>
+#include <random>
 #include <vector>
 
 
@@ -22,44 +23,115 @@ template<typename FieldT>
     return result;
   }
 
+struct ElGamalTraits {
+  static int const order = 8009;
+  static int const generator = 1131;
+};
+using Crypto = CryptoCom::ExpElGamal<ElGamalTraits>;
+using Field = Crypto::Cipher;
 
-using Field = int;
+
+auto Random(int order) -> int {
+  using namespace std;
+  static auto rd = random_device{};
+  static auto engine = mt19937{rd()};
+
+  static auto distribution = uniform_int_distribution<int>{0, order - 1};
+  return distribution(engine);
+}
+auto RandomInt() -> int { return Random(ElGamalTraits::order); }
+
+
+template<typename Rng, typename It, typename Op>
+  void Transform(Rng const& rng, It out, Op op) {
+    using namespace std;
+    transform(begin(rng), end(rng), out, op);
+  }
+
+
+template<typename Rng, typename V>
+  bool Contains(Rng const& rng, V v) {
+    using namespace std;
+    return find(begin(rng), end(rng), v) != end(rng);
+  }
+
+
+auto Keys = Crypto::GenerateKeys(RandomInt);
+
+
+auto Encrypt(int v) -> Crypto::Cipher {
+  return Crypto::Encrypt(v, Keys.first, RandomInt);
+};
+
+
+auto Decrypt(Crypto::Cipher c) -> int {
+  return Crypto::Decrypt(c, Keys.second);
+};
 
 
 auto prepare(std::vector<int> const& numbers) -> Polynomial<Field> {
   // Turn the numbers into coefficients of a polynomial with the roots of the set
-  auto result = Polynomial<int>{1};
+  using namespace std;
+
+  auto polynomial = Polynomial<int>{1};
   for (int i = 0; i < numbers.size(); i++) {
-    result = result * Polynomial<int>{-1 * numbers[i], 1};
+    polynomial = polynomial * Polynomial<int>{-1 * numbers[i], 1};
   }
+
+  auto result = Polynomial<Crypto::Cipher>{};
+  result.reserve(polynomial.size());
+
+  Transform(polynomial, back_inserter(result), Encrypt);
 
   return result;
 }
 
 
-template<typename Integral>
-  auto evaluate(Polynomial<Field> const& polynomial, std::vector<Integral> const& set) -> std::vector<Field> {
-    auto result = std::vector<Integral>{};
-    for (auto i = 0u; i < set.size(); ++i) {
-      auto s = 0;
-      for (auto j = 0u; j < polynomial.size(); ++j) {
-        auto const x_pow = std::pow(set[i], j);
-        s += polynomial[j] * x_pow;
-      }
-      result.push_back(s + set[i]);
+template<typename BidirIter, typename V>
+  auto Eval(BidirIter begin, BidirIter end, V x) {
+    assert(begin != end);
+    auto result = *--end;
+
+    while(end != begin) {
+      result = result * x + *--end;
     }
+
+    return result;
+  }
+
+
+template<typename Integral>
+  auto evaluate(Polynomial<Field> const& poly, std::vector<Integral> const& numbers) -> std::vector<Field> {
+    using namespace std;
+    auto result = vector<Field>{};
+    result.reserve(numbers.size());
+    Transform(numbers, back_inserter(result),
+        [&poly](auto x) { return Eval(begin(poly), end(poly), x) + x; }
+    );
     return result;
   }
 
 
 auto extract_intersection(std::vector<Field> const& evaluated_set, std::vector<int> const& original) -> std::vector<int> {
-  auto intersection = std::vector<int>{};
-  for (auto i = 0u; i < evaluated_set.size(); ++i) {
-    auto const elem_in_local = std::find(
-        original.begin(), original.end(),
-        evaluated_set[i]
-    );
-    if (elem_in_local != original.end()) {
+  using namespace std;
+
+  auto decrypted = vector<int>{};
+  decrypted.reserve(evaluated_set.size());
+  Transform(evaluated_set, back_inserter(decrypted), Decrypt);
+
+  auto original_pow = vector<int>{};
+  original_pow.reserve(original.size());
+  Transform(original, back_inserter(original_pow),
+      [](int x) {
+        using namespace CryptoCom::_Private;
+        return ModuloPow(ElGamalTraits::generator, x, ElGamalTraits::order);
+      }
+  );
+
+  auto intersection = vector<int>{};
+  for (auto i = 0u; i < decrypted.size(); ++i) {
+    auto const elem_in_local = find(begin(original_pow), end(original_pow), decrypted[i]);
+    if (elem_in_local != end(original_pow)) {
       intersection.push_back(*elem_in_local);
     }
   }

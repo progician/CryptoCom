@@ -1,7 +1,9 @@
 #include "catch2/catch.hpp"
 #include "CryptoCom/ElGamal.h"
-#include <iostream>
 
+#include "fmt/format.h"
+
+#include <iostream>
 #include <limits>
 #include <queue>
 
@@ -24,9 +26,24 @@ namespace CryptoCom {
 
 struct F {
   static int const order = 8009;
-  static int const generator = 1131;
+  static int const generator = 1151;
 };
 using SimpleCrypto = ElGamal<F>;
+
+
+namespace Catch {
+  template<> struct StringMaker<std::pair<int, int>> {
+    static std::string convert(std::pair<int, int> const& p) {
+      return fmt::format("({0}, {1})", p.first, p.second);
+    }
+  };
+
+  template<> struct StringMaker<SimpleCrypto::Cipher> {
+    static std::string convert(SimpleCrypto::Cipher const& c) {
+      return fmt::format("({0}, {1})", c.c1, c.c2);
+    }
+  };
+}
 
 
 TEST_CASE("Basic check for ElGamal crypto system") {
@@ -35,14 +52,13 @@ TEST_CASE("Basic check for ElGamal crypto system") {
 
 
   auto const keys = SimpleCrypto::GenerateKeys(rng_for_key);
-  REQUIRE(keys == std::make_pair(SecretNumber, 7697));
+  REQUIRE(keys == std::make_pair(SecretNumber, 4097));
 
   SECTION("encoding") {
     constexpr auto const Message = 102;
     auto rng_for_encryption = std::function<int()>{[SecretNumber](){ return 90; }};
     auto cipher = SimpleCrypto::Encrypt(Message, keys.second, rng_for_encryption);
-    auto expected = SimpleCrypto::Cipher{6603, 5571};
-    REQUIRE(cipher == expected);
+    REQUIRE(cipher == SimpleCrypto::Cipher{1132, 7773});
 
     SECTION("decoding") {
       auto decrypted = SimpleCrypto::Decrypt(cipher, keys.first);

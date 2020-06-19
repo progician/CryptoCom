@@ -6,6 +6,12 @@
 #include <utility>
 
 namespace CryptoCom {
+
+  auto Normalise(int n, int order) -> int {
+    auto result = n % order;
+    return result > 0 ? result : result + order;
+  }
+
   namespace _Private {
     auto ExtendedGCD(int lhs, int rhs) -> std::tuple<int, int, int> {
       if (lhs == 0) {
@@ -22,12 +28,13 @@ namespace CryptoCom {
 
 
     auto ModuloInverse(int n, int m) -> int {
+      using namespace std;
       auto gcd = 0;
       auto x = 0;
-      std::tie(gcd, x, std::ignore) = ExtendedGCD(n, m);
+      tie(gcd, x, ignore) = ExtendedGCD(n, m);
 
       if (gcd != 1) { 
-        throw std::invalid_argument{"can't produce inverse, arguments are relative primes"};
+        throw invalid_argument{"can't produce inverse, arguments are relative primes"};
       }
 
       return (x % m + m) % m;
@@ -37,17 +44,17 @@ namespace CryptoCom {
     auto ModuloMul(int lhs, int rhs, int m) -> int {
       auto result = 0;
 
-      for (; lhs > 0; lhs >>= 1) {
-        if (lhs & 1) {
-          result += rhs;
+      for (; rhs > 0; rhs >>= 1) {
+        if (rhs % 2 == 1) {
+          result += lhs;
           if (result > m) {
             result %= m;
           }
         }
 
-        rhs <<= 1;
-        if (rhs > m) {
-          rhs %= m;
+        lhs <<= 1;
+        if (lhs > m) {
+          lhs %= m;
         }
       }
 
@@ -56,9 +63,10 @@ namespace CryptoCom {
 
 
     auto ModuloPow(int base, int exponent, int m) -> int {
+      using std::abs;
       auto result = 1;
       if (exponent < 0) {
-        auto const p = ModuloPow(base, std::abs(exponent), m);
+        auto const p = ModuloPow(base, abs(exponent), m);
         return ModuloInverse(p, m);
       }
 
@@ -75,10 +83,10 @@ namespace CryptoCom {
   }
 
 
-  template<typename Field> struct ElGamal {
-    static auto GenerateKeys(std::function<int()>& rng) -> std::pair<int, int> {
+  template<typename Group> struct ElGamal {
+    static auto GenerateKeys(std::function<int()> rng) -> std::pair<int, int> {
       auto const private_key = rng();
-      auto const public_key = _Private::ModuloPow(Field::generator, private_key, Field::order);
+      auto const public_key = _Private::ModuloPow(Group::generator, private_key, Group::order);
       return {private_key, public_key};
     }
 
@@ -93,36 +101,37 @@ namespace CryptoCom {
       auto operator*(Cipher const& rhs) const -> Cipher {
         using namespace _Private;
         return {
-            ModuloMul(c1, rhs.c1, Field::order),
-            ModuloMul(c2, rhs.c2, Field::order),
+            ModuloMul(c1, rhs.c1, Group::order),
+            ModuloMul(c2, rhs.c2, Group::order),
         };
       }
 
     };
 
 
-    static auto Encrypt(int message, int key, std::function<int()>& rng) -> Cipher {
+    static auto Encrypt(int message, int key, std::function<int()> rng) -> Cipher {
       using namespace _Private;
       auto const random_secret = rng();
+      message = Normalise(message, Group::order);
       return {
-          ModuloPow(Field::generator, random_secret, Field::order),
-          ModuloMul(ModuloPow(key, random_secret, Field::order), message, Field::order),
+          ModuloPow(Group::generator, random_secret, Group::order),
+          ModuloMul(ModuloPow(key, random_secret, Group::order), message, Group::order),
       };
     }
 
 
     static auto Decrypt(Cipher const cipher, int key) -> int {
       using namespace _Private;
-      auto inverse = ModuloPow(cipher.c1, -1 * key, Field::order);
-      return ModuloMul(cipher.c2, inverse, Field::order);
+      auto inverse = ModuloPow(cipher.c1, -1 * key, Group::order);
+      return ModuloMul(cipher.c2, inverse, Group::order);
     }
 
   };
 
-  template<typename Field> struct ExpElGamal {
-    using PlainElGamal = ElGamal<Field>;
+  template<typename Group> struct ExpElGamal {
+    using PlainElGamal = ElGamal<Group>;
 
-    static auto GenerateKeys(std::function<int()>& rng) -> std::pair<int, int> {
+    static auto GenerateKeys(std::function<int()> rng) -> std::pair<int, int> {
       return PlainElGamal::GenerateKeys(rng);
     }
 
@@ -137,38 +146,54 @@ namespace CryptoCom {
       auto operator+(Cipher const& rhs) const -> Cipher {
         using namespace _Private;
         return {
-            ModuloMul(c1, rhs.c1, Field::order),
-            ModuloMul(c2, rhs.c2, Field::order),
+            ModuloMul(c1, rhs.c1, Group::order),
+            ModuloMul(c2, rhs.c2, Group::order),
         };
       }
 
-      auto operator*(int rhs) const -> Cipher {
+      auto operator+=(Cipher const& rhs) -> Cipher& {
+        *this = *this + rhs;
+        return *this;
+      }
+
+      auto operator+(int rhs) const -> Cipher {
         using namespace _Private;
         return {
             c1,
             ModuloMul(
                 c2,
-                ModuloPow(Field::generator, rhs, Field::order)
+                ModuloPow(Group::generator, rhs % Group::order, Group::order),
+                Group::order
             )
+        };
+      }
+
+      auto operator*(int rhs) const -> Cipher {
+        using namespace _Private;
+        auto const plain = Normalise(rhs, Group::order);
+        return {
+            ModuloPow(c1, plain, Group::order),
+            ModuloPow(c2, plain, Group::order),
         };
       }
     };
 
-
-    static auto Encrypt(int message, int key, std::function<int()>& rng) -> Cipher {
+    
+    static auto Encrypt(int message, int key, std::function<int()> rng) -> Cipher {
       using namespace _Private;
       auto const random_secret = rng();
+      message = Normalise(message, Group::order);
       return {
-          ModuloPow(Field::generator, random_secret, Field::order),
-          ModuloMul(ModuloPow(key, random_secret, Field::order), message, Field::order),
+          ModuloPow(Group::generator, random_secret, Group::order),
+          ModuloMul(ModuloPow(key, random_secret, Group::order), message, Group::order),
       };
     }
 
 
     static auto Decrypt(Cipher const cipher, int key) -> int {
       using namespace _Private;
-      auto inverse = ModuloPow(cipher.c1, -1 * key, Field::order);
-      return ModuloMul(cipher.c2, inverse, Field::order);
+      auto inverse = ModuloPow(cipher.c1, -1 * key, Group::order);
+      return ModuloMul(cipher.c2, inverse, Group::order);
     }
   };
 } // CryptoCom::ElGamal
