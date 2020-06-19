@@ -104,5 +104,5 @@ TEST_CASE("ExpElGamal is additively homomorphic") {
 
   auto const multiplied_e = five_e + four_e;
   auto const result = ExpCrypto::Decrypt(multiplied_e, keys.first);
-  REQUIRE(result == 5 * 4);
+  REQUIRE(result == ExpCrypto::Apply(5 + 4));
 }

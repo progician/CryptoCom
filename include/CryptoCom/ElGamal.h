@@ -185,7 +185,11 @@ namespace CryptoCom {
       message = Normalise(message, Group::order);
       return {
           ModuloPow(Group::generator, random_secret, Group::order),
-          ModuloMul(ModuloPow(key, random_secret, Group::order), message, Group::order),
+          ModuloMul(
+              ModuloPow(key, random_secret, Group::order),
+              ModuloPow(Group::generator, message, Group::order),
+              Group::order
+          ),
       };
     }
 
@@ -194,6 +198,11 @@ namespace CryptoCom {
       using namespace _Private;
       auto inverse = ModuloPow(cipher.c1, -1 * key, Group::order);
       return ModuloMul(cipher.c2, inverse, Group::order);
+    }
+
+    static auto Apply(int number) -> int {
+      using namespace _Private;
+      return ModuloPow(Group::generator, number, Group::order);
     }
   };
 } // CryptoCom::ElGamal
