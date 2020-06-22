@@ -124,13 +124,37 @@ TEST_CASE("ExpElGamal is additively homomorphic") {
   }
 }
 
+
 TEST_CASE("ExpElGamal also defines scalar multiplication") {
   auto rng = Sequence(79, 90, 23);
 
   auto const keys = ExpCrypto::GenerateKeys(rng);
   auto const five_e = ExpCrypto::Encrypt(5, keys.second, rng);
 
-  auto const product_e = (five_e * 2) - 10;
+  auto const product_e = five_e * 2;
   auto const result = ExpCrypto::Decrypt(product_e, keys.first);
-  REQUIRE(result == ExpCrypto::Apply(5 * 2 - 10));
+  REQUIRE(result == ExpCrypto::Apply(5 * 2));
+}
+
+
+TEST_CASE("polynomial evaluation") {
+  auto rng = Sequence(79, 90, 23, 69, 101, 222);
+
+  auto const keys = ExpCrypto::GenerateKeys(rng);
+
+  // (x - 11)(x - 13) = x^2 - 13x - 11x + 143 = 1 * x^2 + (-24) * x^1 + 143 * x^0
+  auto const coeffs = std::vector<ExpCrypto::Cipher>{
+    ExpCrypto::Encrypt(143, keys.second, rng),
+    ExpCrypto::Encrypt(-24, keys.second, rng),
+    ExpCrypto::Encrypt(1, keys.second, rng),
+  };
+
+  auto eval = coeffs[2];
+  eval = eval * 11 + coeffs[1];
+  eval = eval * 11 + coeffs[0];
+
+  eval = eval + 11;
+
+  auto const deciphered = ExpCrypto::Decrypt(eval, keys.first);
+  REQUIRE(deciphered == ExpCrypto::Apply(11));
 }

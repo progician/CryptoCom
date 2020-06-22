@@ -9,7 +9,7 @@ namespace CryptoCom {
 
   auto Normalise(int n, int order) -> int {
     auto result = n % order;
-    return result > 0 ? result : result + order;
+    return result >= 0 ? result : result + order;
   }
 
   namespace _Private {
@@ -84,7 +84,7 @@ namespace CryptoCom {
 
 
   template<typename Group> struct ElGamal {
-    static auto GenerateKeys(std::function<int()> rng) -> std::pair<int, int> {
+    static auto GenerateKeys(std::function<int()>& rng) -> std::pair<int, int> {
       auto const private_key = rng();
       auto const public_key = _Private::ModuloPow(Group::generator, private_key, Group::order);
       return {private_key, public_key};
@@ -109,7 +109,7 @@ namespace CryptoCom {
     };
 
 
-    static auto Encrypt(int message, int key, std::function<int()> rng) -> Cipher {
+    static auto Encrypt(int message, int key, std::function<int()>& rng) -> Cipher {
       using namespace _Private;
       auto const random_secret = rng();
       message = Normalise(message, Group::order);
@@ -131,7 +131,7 @@ namespace CryptoCom {
   template<typename Group> struct ExpElGamal {
     using PlainElGamal = ElGamal<Group>;
 
-    static auto GenerateKeys(std::function<int()> rng) -> std::pair<int, int> {
+    static auto GenerateKeys(std::function<int()>& rng) -> std::pair<int, int> {
       return PlainElGamal::GenerateKeys(rng);
     }
 
@@ -162,7 +162,7 @@ namespace CryptoCom {
             c1,
             ModuloMul(
                 c2,
-                ModuloPow(Group::generator, rhs % Group::order, Group::order),
+                ModuloPow(Group::generator, Normalise(rhs, Group::order), Group::order),
                 Group::order
             )
         };
@@ -184,10 +184,9 @@ namespace CryptoCom {
     };
 
     
-    static auto Encrypt(int message, int key, std::function<int()> rng) -> Cipher {
+    static auto Encrypt(int message, int key, std::function<int()>& rng) -> Cipher {
       using namespace _Private;
       auto const random_secret = rng();
-      message = Normalise(message, Group::order);
       return {
           ModuloPow(Group::generator, random_secret, Group::order),
           ModuloMul(
