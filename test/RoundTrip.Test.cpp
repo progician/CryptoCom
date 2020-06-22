@@ -42,7 +42,7 @@ auto Random(int order) -> int {
   static auto distribution = uniform_int_distribution<int>{0, order - 1};
   return distribution(engine);
 }
-auto RandomInt() -> int { return Random(ElGamalTraits::order); }
+std::function<int()> RandomInt = []() -> int { return Random(ElGamalTraits::order); };
 
 
 template<typename Rng, typename It, typename Op>
@@ -76,9 +76,9 @@ template<> struct fmt::formatter<Crypto::Cipher> {
   constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
 
   template <typename FormatContext>
-  auto format(Crypto::Cipher const& c, FormatContext& ctx) {
-    return format_to(ctx.out(), "({}, {})", c.c1, c.c2);
-  }
+    auto format(Crypto::Cipher const& c, FormatContext& ctx) {
+      return format_to(ctx.out(), "({}, {})", c.c1, c.c2);
+    }
 };
 
 
@@ -90,6 +90,7 @@ auto prepare(std::vector<int> const& numbers) -> Polynomial<Field> {
   for (int i = 0; i < numbers.size(); i++) {
     polynomial = polynomial * Polynomial<int>{-1 * numbers[i], 1};
   }
+  fmt::print("polynomial: {}\n", fmt::join(polynomial, ", "));
 
   auto result = Polynomial<Crypto::Cipher>{};
   result.reserve(polynomial.size());
@@ -105,7 +106,7 @@ template<typename BidirIter, typename V>
     assert(begin != end);
     auto result = *--end;
 
-    while(end != begin) {
+    while (end != begin) {
       result = result * x + *--end;
     }
 
@@ -161,7 +162,6 @@ auto main(int, char const*[]) -> int {
   auto const encoded = prepare(local);
   fmt::print("\tencoded: {}\n", fmt::join(encoded, ", "));
 
-
   auto const remote = std::vector<int>{10, 11};
   auto const evaluated = evaluate(encoded, remote);
   fmt::print("\tevaluated: {}\n", fmt::join(evaluated, ", "));
@@ -170,9 +170,10 @@ auto main(int, char const*[]) -> int {
   auto const expected = std::vector<int>{11};
   
   if (actual.size() != expected.size() || !std::equal(actual.begin(), actual.end(), expected.begin())) {
-    fmt::print(stderr, "failed: sets are not equal!\n");
-    fmt::print(stderr, "\texpected: {}\n", fmt::join(expected, ", "));
-    fmt::print(stderr, "\tactual:   {}\n", fmt::join(actual, ", "));
+    fmt::print(stderr, "failed: sets are not equal!\n\texpected: {}\n\tactual:  {}\n",
+        fmt::join(expected, ", "),
+        fmt::join(actual, ", ")
+    );
     return 1;
   }
 
