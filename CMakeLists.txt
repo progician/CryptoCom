@@ -6,8 +6,10 @@ project(CryptoCom
 
 
 #===-------------------------------------------------------------------------===
-# For conan's find package modules
-list(PREPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR})
+# Conan 2: Set paths to find Conan-generated modules and toolchain
+# cmake_layout() puts generators in build/<build_type>/generators/
+list(APPEND CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR}/build/${CMAKE_BUILD_TYPE}/generators)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR}/build/${CMAKE_BUILD_TYPE}/generators)
 
 
 #===-------------------------------------------------------------------------===
@@ -40,13 +42,13 @@ target_sources(CryptoCom.UT
 )
 target_link_libraries(CryptoCom.UT
     PRIVATE
-        Catch2::Catch2
+        Catch2::Catch2WithMain
         CryptoCom::CryptoCom
         fmt::fmt
 )
 
 add_custom_target(check-unit
-    COMMAND $<TARGET_FILE:CryptoCom.UT> --use-colour yes
+    COMMAND $<TARGET_FILE:CryptoCom.UT> --colour-mode ansi
     COMMENT "Running unit tests..."
     DEPENDS CryptoCom.UT
 )

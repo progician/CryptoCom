@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cassert>
 #include <cmath>
 #include <iostream>
 #include <iterator>
@@ -7,6 +8,7 @@
 
 
 #include "fmt/format.h"
+#include "fmt/ranges.h"
 
 
 #include "CryptoCom/ElGamal.h"
@@ -76,7 +78,7 @@ template<> struct fmt::formatter<Crypto::Cipher> {
   constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
 
   template <typename FormatContext>
-    auto format(Crypto::Cipher const& c, FormatContext& ctx) {
+    auto format(Crypto::Cipher const& c, FormatContext& ctx) const {
       return format_to(ctx.out(), "({}, {})", c.c1, c.c2);
     }
 };
