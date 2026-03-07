@@ -47,13 +47,13 @@ namespace CryptoCom {
       for (; rhs > 0; rhs >>= 1) {
         if (rhs % 2 == 1) {
           result += lhs;
-          if (result > m) {
+          if (result >= m) {
             result %= m;
           }
         }
 
         lhs <<= 1;
-        if (lhs > m) {
+        if (lhs >= m) {
           lhs %= m;
         }
       }
