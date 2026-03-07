@@ -8,8 +8,8 @@ project(CryptoCom
 #===-------------------------------------------------------------------------===
 # Conan 2: Set paths to find Conan-generated modules and toolchain
 # cmake_layout() puts generators in build/<build_type>/generators/
-list(APPEND CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR}/build/${CMAKE_BUILD_TYPE}/generators)
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR}/build/${CMAKE_BUILD_TYPE}/generators)
+list(APPEND CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR}/generators)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR}/generators)
 
 
 #===-------------------------------------------------------------------------===
