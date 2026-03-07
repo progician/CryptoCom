@@ -130,33 +130,34 @@ template<typename Integral>
   }
 
 
-auto extract_intersection(std::vector<Field> const& evaluated_set, std::vector<int> const& original) -> std::vector<int> {
+auto extract_intersection(std::vector<Field> const& evaluated_set,
+                          std::vector<int> const& original,
+                          std::vector<int> const& remote) -> std::vector<int> {
   using namespace std;
 
-  auto decrypted = vector<int>{};
-  decrypted.reserve(evaluated_set.size());
-  Transform(evaluated_set, back_inserter(decrypted), Decrypt);
+  auto references = vector<int>{};
+  Transform(remote, std::back_inserter(references), Crypto::Apply);
 
-  auto original_pow = vector<int>{};
-  original_pow.reserve(original.size());
-  Transform(original, back_inserter(original_pow),
-      [](int x) {
-        using namespace CryptoCom::_Private;
-        return ModuloPow(ElGamalTraits::generator, x, ElGamalTraits::order);
-      }
-  );
-
-  fmt::print("\toriginal: {}\n", fmt::join(original_pow, ", "));
-  fmt::print("\tdecrypted: {}\n", fmt::join(decrypted, ", "));
-
+  auto evaluated_decrypted = vector<int>{};
+  Transform(evaluated_set, std::back_inserter(evaluated_decrypted), Decrypt);
 
   auto intersection = vector<int>{};
-  for (auto i = 0u; i < decrypted.size(); ++i) {
-    auto const elem_in_local = find(begin(original_pow), end(original_pow), decrypted[i]);
-    if (elem_in_local != end(original_pow)) {
-      intersection.push_back(*elem_in_local);
+  intersection.reserve(min(evaluated_set.size(), std::max(original.size(), remote.size())));
+
+  for (auto idx = 0u; idx < evaluated_set.size() && idx < remote.size(); ++idx) {
+    int const x = remote[idx];
+    auto decrypted = evaluated_decrypted[idx];
+    auto reference = references[idx];
+
+    fmt::print("\tdecrypted[{}] = {} (expect {} for {})\n",
+               idx, decrypted, reference, x);
+
+    if (decrypted == reference) {
+      // x was in the local sete
+      intersection.push_back(x);
     }
   }
+
   return intersection;
 }
 
@@ -170,7 +171,7 @@ auto main(int, char const*[]) -> int {
   auto const evaluated = evaluate(encoded, remote);
   fmt::print("\tevaluated: {}\n", fmt::join(evaluated, ", "));
 
-  auto const actual = extract_intersection(evaluated, local);
+  auto const actual = extract_intersection(evaluated, local, remote);
   auto const expected = std::vector<int>{11};
   
   if (actual.size() != expected.size() || !std::equal(actual.begin(), actual.end(), expected.begin())) {
