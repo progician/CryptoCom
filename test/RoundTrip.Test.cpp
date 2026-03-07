@@ -65,12 +65,14 @@ auto Keys = Crypto::GenerateKeys(RandomInt);
 
 
 auto Encrypt(int v) -> Crypto::Cipher {
-  return Crypto::Encrypt(v, Keys.first, RandomInt);
+  // encryption should use the *public* key (second element)
+  return Crypto::Encrypt(v, Keys.second, RandomInt);
 };
 
 
 auto Decrypt(Crypto::Cipher c) -> int {
-  return Crypto::Decrypt(c, Keys.second);
+  // decryption requires the private key (first element)
+  return Crypto::Decrypt(c, Keys.first);
 };
 
 
