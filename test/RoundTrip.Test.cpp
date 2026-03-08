@@ -1,7 +1,5 @@
 #include <algorithm>
 #include <cassert>
-#include <cmath>
-#include <iostream>
 #include <iterator>
 #include <random>
 #include <vector>
