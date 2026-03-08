@@ -5,25 +5,23 @@ jobs:
   build-linux:
     name: Build on Linux
     runs-on: ubuntu-latest
-    env:
-      PATH: /home/runner/.local/bin:/usr/share/rust/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin
     steps:
-      - uses: actions/checkout@v1
-        with:
-          fetch-depth: 1
+      - uses: actions/checkout@v4
 
-      - name: Install dependencies
-        run: |
-          echo $PATH
-          python -m pip install --upgrade pip
-          python -m pip install --user 'cmake==3.15.3' 'ninja==1.9.0' 'conan==1.21.0'
-          conan install -if build -g cmake_paths .
-      
+      - name: Install system dependencies
+        run: sudo apt-get install -y cmake ninja-build
+
+      - name: Install Conan
+        run: pip install 'conan>=2.0'
+
+      - name: Install project dependencies
+        run: conan install . --build=missing -s build_type=Release
+
       - name: Configure
-        run: cmake -Bbuild -GNinja -DCMAKE_PROJECT_INCLUDE=build/conan_paths.cmake .
+        run: cmake --preset release
 
       - name: Unit tests
-        run: cmake --build build -t check-unit
+        run: cmake --build --preset release
 
       - name: Integration Tests
-        run: cmake --build build -t check-integration
+        run: cmake --build --preset release-integration
