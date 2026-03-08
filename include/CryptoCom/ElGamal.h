@@ -7,13 +7,13 @@
 
 namespace CryptoCom {
 
-  auto Normalise(int n, int order) -> int {
+  inline auto Normalise(int n, int order) -> int {
     auto result = n % order;
     return result >= 0 ? result : result + order;
   }
 
   namespace _Private {
-    auto ExtendedGCD(int lhs, int rhs) -> std::tuple<int, int, int> {
+    inline auto ExtendedGCD(int lhs, int rhs) -> std::tuple<int, int, int> {
       if (lhs == 0) {
         return {rhs, 0, 1};
       }
@@ -27,7 +27,7 @@ namespace CryptoCom {
     }
 
 
-    auto ModuloInverse(int n, int m) -> int {
+    inline auto ModuloInverse(int n, int m) -> int {
       using namespace std;
       auto gcd = 0;
       auto x = 0;
@@ -41,7 +41,7 @@ namespace CryptoCom {
     }
 
 
-    auto ModuloMul(int lhs, int rhs, int m) -> int {
+    inline auto ModuloMul(int lhs, int rhs, int m) -> int {
       auto result = 0;
 
       for (; rhs > 0; rhs >>= 1) {
@@ -62,7 +62,7 @@ namespace CryptoCom {
     }
 
 
-    auto ModuloPow(int base, int exponent, int m) -> int {
+    inline auto ModuloPow(int base, int exponent, int m) -> int {
       using std::abs;
       auto result = 1;
       if (exponent < 0) {
